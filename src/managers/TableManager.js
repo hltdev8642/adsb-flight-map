@@ -7,14 +7,22 @@ export default class TableManager {
 	static fetcher = new Fetcher();
 
 	static async updateAircraftTable() {
+		try {
+			const response = await TableManager.fetcher.fetchAllAircrafts();
 
-		const aircrafts = await TableManager.fetcher.fetchAllAircrafts()
-			.then(res => res.data)
-			.then(data => data.aircraft);
+			// Check if the response contains an error
+			if (response.error || response.status === 'failed') {
+				console.error('Failed to fetch aircraft data:', response.error);
+				return;
+			}
 
-		const filtered_aircrafts = TableManager.applyFilters(aircrafts, filters);
-		TableManager.sortBy(filtered_aircrafts, sortOptions);
-		StoreManager.updateAllAircrafts(aircrafts);
+			const aircrafts = response.data.aircraft;
+			const filtered_aircrafts = TableManager.applyFilters(aircrafts, filters);
+			TableManager.sortBy(filtered_aircrafts, sortOptions);
+			StoreManager.updateAllAircrafts(aircrafts);
+		} catch (error) {
+			console.error('Error updating aircraft table:', error);
+		}
 	}
 
 

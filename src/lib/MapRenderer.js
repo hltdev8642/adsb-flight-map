@@ -137,6 +137,12 @@ export default class MapRenderer {
 			// Fetch the aircrafts within the camera's bounds
 			const data = await this.fetcher.fetchAircraftsByBounds(south, north, west, east);
 
+			// Check if the response contains an error
+			if (data.error || data.status === 'failed') {
+				console.error('Failed to fetch aircraft data:', data.error);
+				return;
+			}
+
 			// Create a set of the hex codes of the current aircrafts
 			const currentAircraftHexes = new Set(data.data.aircraft.map(item => item.hex));
 
@@ -188,6 +194,13 @@ export default class MapRenderer {
 		} else {
 			// If it's not, fetch the aircraft data from the server
 			const data = await this.fetcher.fetchAircraftByHex(hex);
+
+			// Check if the response contains an error
+			if (data.error || data.status === 'failed') {
+				console.error('Failed to fetch aircraft data:', data.error);
+				return null;
+			}
+
 			// Create a new Aircraft instance with the fetched data
 			aircraft =  new Aircraft(data.data.aircraft[0]);
 		}
@@ -213,6 +226,13 @@ export default class MapRenderer {
 				}
 				// Get the new selected aircraft instance and fetch its photo
 				this.selectedAircraftInstance = await this.getAircraftInstanceByHex(selectedAircraft.hex);
+
+				// Check if we successfully got the aircraft instance
+				if (!this.selectedAircraftInstance) {
+					console.error('Failed to get aircraft instance for hex:', selectedAircraft.hex);
+					return;
+				}
+
 				this.selectedAircraftInstance.fetchPhoto(this.fetcher);
 				// Remove the selected aircraft from the cameraScopeAircrafts map
 				this.cameraScopeAircrafts.delete(selectedAircraft.hex);
@@ -220,6 +240,13 @@ export default class MapRenderer {
 			case UPDATE_SELECTED_AIRCRAFT:
 				// Fetch the data of the selected aircraft and update its data
 				let data = await this.fetcher.fetchAircraftByHex(selectedAircraft.hex);
+
+				// Check if the response contains an error
+				if (data.error || data.status === 'failed') {
+					console.error('Failed to fetch aircraft data:', data.error);
+					return;
+				}
+
 				this.selectedAircraftInstance.updateAircraftData(data.data.aircraft[0]);
 				// Update the current table page with the hex of the selected aircraft
 				TableManager.updateCurrentTablePage(this.selectedAircraftInstance.hex);
@@ -273,21 +300,21 @@ export default class MapRenderer {
 	}
 
 	// Method to start the render aircrafts loop
-	startRenderAircraftsLoop(seconds = 2000) {
+	startRenderAircraftsLoop(seconds = 5000) {
 		this.renderAircraftsInterval = setInterval(() => {
 			this.renderAircrafts();
 			this.stopRenderAircraftsLoop();
 			this.startRenderAircraftsLoop();
-		}, (this.cameraScopeAircrafts.size > seconds) ? 3000 : seconds);
+		}, (this.cameraScopeAircrafts.size > seconds) ? 8000 : seconds);
 	}
 
 	// Method to start the camera scope loop
-	startCameraScopeLoop(seconds = 2000) {
+	startCameraScopeLoop(seconds = 10000) {
 		this.cameraScopeInterval = setInterval(() => {
 			this.updateAircraftsInCameraScope();
 			this.stopCameraScopeLoop();
 			this.startCameraScopeLoop();
-		}, (this.cameraScopeAircrafts.size > seconds) ? 3000 : seconds);
+		}, (this.cameraScopeAircrafts.size > seconds) ? 15000 : seconds);
 	}
 
 	// Method to start the selected aircrafts loop

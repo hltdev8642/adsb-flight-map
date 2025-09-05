@@ -79,15 +79,30 @@ export default class Fetcher {
 
 	}
 
-	async makeRequest(url, options = this.defaultOptions) {
+	async makeRequest(url, options = this.defaultOptions, retryCount = 0) {
 		try {
 			const response = await fetch(url, options);
 			if (!response.ok) {
+				if (response.status === 429) {
+					// Rate limited - implement exponential backoff
+					const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 30000); // Max 30 seconds
+					console.warn(`Rate limited. Retrying in ${backoffTime}ms...`);
+					await new Promise(resolve => setTimeout(resolve, backoffTime));
+					return this.makeRequest(url, options, retryCount + 1);
+				}
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			return await response.json();
 		} catch (error) {
 			console.error(`Failed to fetch: ${error}`);
+			if (retryCount < 3 && error.message.includes('429')) {
+				const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 30000);
+				console.warn(`Rate limit error. Retrying in ${backoffTime}ms...`);
+				await new Promise(resolve => setTimeout(resolve, backoffTime));
+				return this.makeRequest(url, options, retryCount + 1);
+			}
+			// Return a proper error response instead of undefined
+			return { error: error.message, status: 'failed' };
 		}
 	}
 

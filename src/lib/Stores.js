@@ -9,7 +9,7 @@ export const stores = writable({
 	viewer: null,
 	selectedAircraft: null,
 
-	currentApi: APIS.exchange,
+	currentApi: APIS.lol,
 
 	isMenuOpen: false,
 	isFilterOpen: false,
